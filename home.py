@@ -9,7 +9,7 @@ def log(message, file=sys.stdout):
   file.write(message)
   file.flush()
 
-def wait_state(network, state=network.STATE_READY, timeout_secs=-1,
+def wait_state(network, state=ZWaveNetwork.STATE_READY, timeout_secs=-1,
     sleep=0.25):
   now = datetime.datetime.now
   start = now()
