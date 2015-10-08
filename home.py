@@ -14,6 +14,7 @@ def wait_state(network, state=ZWaveNetwork.STATE_READY, timeout_secs=-1,
   now = datetime.datetime.now
   start = now()
   prev = None
+  diff = now() - start
 
   while True:
     if prev != network.state:
@@ -25,9 +26,11 @@ def wait_state(network, state=ZWaveNetwork.STATE_READY, timeout_secs=-1,
 
     diff = now() - start
     if timeout_secs > 0 and diff.seconds >= timeout_secs:
-      break
+      return
 
     time.sleep(sleep)
+
+  log("Time to boot: %s\n" % diff)
 
 def main():
   # TODO: Auto-discover
@@ -66,9 +69,9 @@ def main():
   wait_state(network)
 
   if not network.is_ready:
-    log("Network is not ready")
+    log("Network is not ready\n")
   else:
-    log("Network is ready")
+    log("Network is ready\n")
 
   for node in map(network.nodes.get, network.nodes):
     print(node)
