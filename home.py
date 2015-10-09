@@ -3,11 +3,12 @@
 
 from openzwave.network import ZWaveNetwork
 from openzwave.option import ZWaveOption
+import code
 import datetime
+import louie
 import os
 import sys
 import time
-import louie
 
 def log(message, file=sys.stdout):
   file.write(message)
@@ -93,8 +94,9 @@ def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
 
   try:
     network.start()
-    while True:
-      time.sleep(5)
+    #while True:
+    #  time.sleep(5)
+    code.interact(local=locals())
   except KeyboardInterrupt:
     pass
   finally:
