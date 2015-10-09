@@ -7,6 +7,7 @@ import datetime
 import os
 import sys
 import time
+import louie
 
 def log(message, file=sys.stdout):
   file.write(message)
@@ -34,6 +35,24 @@ def wait_state(network, state=ZWaveNetwork.STATE_READY, timeout_secs=-1,
     time.sleep(sleep)
 
   log("Time to boot: %s\n" % diff)
+
+def node_updated(network, node):
+  pass
+  #print("Node update: %s" % node)
+
+def value_updated(network, node, value):
+  name = node.product_name
+  if not name:
+    name = node.product_type
+
+  print("%s node_id=%s value_id=%s '%s' %s: %s %s" % (
+    datetime.datetime.now(),
+    node.node_id,
+    value.value_id,
+    name,
+    value.label,
+    value.data,
+    value.units))
 
 def get_options(
     device,
@@ -65,18 +84,22 @@ def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
 
   options = get_options(device=device)
 
-  network = ZWaveNetwork(options, log=None)
+  network = ZWaveNetwork(options, log=None, autostart=False)
   #print(network) # TODO: Does not work, seems to be a bug in python-openzwave
 
-  wait_state(network)
+  # Set up signaling
+  louie.dispatcher.connect(node_updated, ZWaveNetwork.SIGNAL_NODE)
+  louie.dispatcher.connect(value_updated, ZWaveNetwork.SIGNAL_VALUE)
 
-  if not network.is_ready:
-    log("Network is not ready\n")
-  else:
-    log("Network is ready\n")
-
-  for node in map(network.nodes.get, network.nodes):
-    print(node)
+  try:
+    network.start()
+    while True:
+      time.sleep(5)
+  except KeyboardInterrupt:
+    pass
+  finally:
+    print("\nStopping network ...")
+    network.stop()
 
 if __name__ == "__main__":
   main()
