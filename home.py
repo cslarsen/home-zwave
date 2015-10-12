@@ -5,55 +5,46 @@ from openzwave.network import ZWaveNetwork
 from openzwave.option import ZWaveOption
 import code
 import datetime
+import logging
 import louie
 import os
 import sys
 import time
 
-def log(message, file=sys.stdout):
-  file.write(message)
-  file.flush()
+class Signal:
+  @staticmethod
+  def node_updated(network, node):
+    logging.info("Node updated %s" % node)
 
-def wait_state(network, state=ZWaveNetwork.STATE_READY, timeout_secs=-1,
-    sleep=0.25):
-  now = datetime.datetime.now
-  start = now()
-  prev = None
-  diff = now() - start
+  @staticmethod
+  def node_event(*args, **kw):
+    logging.info("node event args=%s kw=%s" % (args, kw))
 
-  while True:
-    if prev != network.state:
-      prev = network.state
-      log("%s (%d/%d)\n" % (network.state_str, network.state, state))
+  @staticmethod
+  def value_updated(network, node, value):
+    name = node.product_name
+    if not name:
+      name = node.product_type
 
-    if network.state >= state:
-      break
+    logging.info("s node_id=%s value_id=%x '%s' %s: %s %s" % (
+      node.node_id,
+      value.value_id,
+      name,
+      value.label,
+      value.data,
+      value.units))
 
-    diff = now() - start
-    if timeout_secs > 0 and diff.seconds >= timeout_secs:
-      return
+  @staticmethod
+  def network_started(network):
+    logging.info("Network started")
 
-    time.sleep(sleep)
+  @staticmethod
+  def network_failed(network):
+    logging.info("Network failed")
 
-  log("Time to boot: %s\n" % diff)
-
-def node_updated(network, node):
-  pass
-  #print("Node update: %s" % node)
-
-def value_updated(network, node, value):
-  name = node.product_name
-  if not name:
-    name = node.product_type
-
-  print("%s node_id=%s value_id=%s '%s' %s: %s %s" % (
-    datetime.datetime.now(),
-    node.node_id,
-    value.value_id,
-    name,
-    value.label,
-    value.data,
-    value.units))
+  @staticmethod
+  def network_ready(network):
+    logging.info("Network ready")
 
 def get_options(
     device,
@@ -77,6 +68,9 @@ def get_options(
     raise
 
 def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
+  logging.basicConfig(level=logging.INFO)
+  logging.info("Starting up")
+
   if not os.path.exists(device):
     raise RuntimeError("Device does not exist: %s" % device)
 
@@ -89,8 +83,14 @@ def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
   #print(network) # TODO: Does not work, seems to be a bug in python-openzwave
 
   # Set up signaling
-  louie.dispatcher.connect(node_updated, ZWaveNetwork.SIGNAL_NODE)
-  louie.dispatcher.connect(value_updated, ZWaveNetwork.SIGNAL_VALUE)
+  louie.dispatcher.connect(Signal.node_updated, ZWaveNetwork.SIGNAL_NODE)
+  louie.dispatcher.connect(Signal.value_updated, ZWaveNetwork.SIGNAL_VALUE)
+  louie.dispatcher.connect(Signal.network_started, ZWaveNetwork.SIGNAL_NETWORK_STARTED)
+  louie.dispatcher.connect(Signal.network_failed, ZWaveNetwork.SIGNAL_NETWORK_FAILED)
+  louie.dispatcher.connect(Signal.network_ready, ZWaveNetwork.SIGNAL_NETWORK_READY)
+  louie.dispatcher.connect(Signal.node_event, ZWaveNetwork.SIGNAL_NODE_EVENT)
+
+  # Find light switch
 
   try:
     network.start()
@@ -100,7 +100,7 @@ def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
   except KeyboardInterrupt:
     pass
   finally:
-    print("\nStopping network ...")
+    logging.info("\nStopping network ...")
     network.stop()
 
 if __name__ == "__main__":
