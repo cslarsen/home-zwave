@@ -1,6 +1,5 @@
+*.db
+*.db-journal
 *.pyc
+*.xml
 OZW_Log.txt
-home.db
-pyozw.db
-zwcfg*.xml
-zwscene.xml
