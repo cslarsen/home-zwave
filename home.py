@@ -17,6 +17,34 @@ import sys
 import threading
 import time
 
+# TODO: Refactor this stuff
+LIGHT = None
+def find_light(network):
+  global LIGHT
+  if LIGHT is not None:
+    return
+  logging.info("Looking for light switch ...")
+  # Find light
+  light = LIGHT
+  needle = 0x100000002494000
+  for node in network.nodes.values():
+    switches = node.get_switches()
+    logging.info("Switches for %s is %s" % (node, switches))
+    if needle in switches:
+      logging.info("Found light at %s" % switches[needle])
+      LIGHT = switches[needle]
+      break
+  else:
+    logging.info("Did not find light switch")
+
+def set_light(flag):
+  if LIGHT is None:
+    logging.info("Light switch is unknown")
+    return
+  logging.info("Setting light to %s" % flag)
+  node = LIGHT.node
+  node.set_switch(LIGHT.value_id, flag)
+
 class Db:
   def __init__(self, location):
     self.location = location
@@ -69,7 +97,7 @@ class DataQueue:
     commit_timeout = datetime.timedelta(seconds=30)
 
     # Time to wait for each queue item
-    get_timeout = 3
+    get_timeout = 1
 
     try:
       start = datetime.datetime.utcnow()
@@ -104,6 +132,7 @@ class Signal:
   @staticmethod
   def node_updated(*args, **kw):
     logging.info("Node updated args=%s kw=%s" % (args, kw))
+    find_light(kw["network"])
 
   @staticmethod
   def node_event(*args, **kw):
@@ -139,12 +168,20 @@ class Signal:
       value.data,
       value.units))
 
+    if value.label.lower().startswith("burglar"):
+      logging.info("Movement, turning on light")
+      if int(value.data) == 8:
+        set_light(True)
+      else:
+        set_light(False)
+
     if isinstance(value.data, float) or isinstance(value.data, int):
       DataQueue.put((datetime.datetime.utcnow(), value), block=True)
 
   @staticmethod
   def network_started(network):
     logging.info("Network started")
+    find_light(network)
 
   @staticmethod
   def network_failed(network):
@@ -153,6 +190,7 @@ class Signal:
   @staticmethod
   def network_ready(network):
     logging.info("Network ready")
+    find_light(network)
 
 def create_zwave_options(
     device,
@@ -219,6 +257,8 @@ def connect_signals():
     louie.dispatcher.connect(func, signal)
 
 def main():
+  global LIGHT
+
   logging.basicConfig(level=logging.INFO,
     format="%(asctime)-15s %(levelno)d %(message)s")
 
@@ -233,16 +273,18 @@ def main():
   options = create_zwave_options(device=device)
   network = ZWaveNetwork(options, log=None, autostart=False)
 
-  # TODO: Find light switch
-
   queue = threading.Thread(target=DataQueue.worker,
       kwargs={"location": "home.db"},
       name="db")
   queue.start()
 
   try:
-      network.start()
-      code.interact(local=locals())
+    network.start()
+
+    # Start REPL with a union where globals override locals
+    local = locals().copy()
+    local.update(globals())
+    code.interact(local=local)
   except KeyboardInterrupt:
     pass
   finally:
