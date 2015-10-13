@@ -22,28 +22,23 @@ LIGHT = None
 def find_light(network):
   global LIGHT
   if LIGHT is not None:
-    return
-  logging.info("Looking for light switch ...")
-  # Find light
-  light = LIGHT
+    return LIGHT
   needle = 0x100000002494000
   for node in network.nodes.values():
     switches = node.get_switches()
-    logging.info("Switches for %s is %s" % (node, switches))
     if needle in switches:
-      logging.info("Found light at %s" % switches[needle])
+      logging.info("Found light: %s" % switches[needle])
       LIGHT = switches[needle]
-      break
+      return LIGHT
   else:
     logging.info("Did not find light switch")
-
+    return None
 def set_light(flag):
+  global LIGHT
   if LIGHT is None:
-    logging.info("Light switch is unknown")
     return
-  logging.info("Setting light to %s" % flag)
-  node = LIGHT.node
-  node.set_switch(LIGHT.value_id, flag)
+  logging.info("Turning light %s" % ("on" if flag else "off"))
+  LIGHT.node.set_switch(LIGHT.value_id, flag)
 
 class Db:
   def __init__(self, location):
@@ -169,11 +164,8 @@ class Signal:
       value.units))
 
     if value.label.lower().startswith("burglar"):
-      logging.info("Movement, turning on light")
-      if int(value.data) == 8:
-        set_light(True)
-      else:
-        set_light(False)
+      logging.info("Detected movement: %s" % value.data)
+      set_light(int(value.data) == 8)
 
     if isinstance(value.data, float) or isinstance(value.data, int):
       DataQueue.put((datetime.datetime.utcnow(), value), block=True)
