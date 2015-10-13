@@ -77,5 +77,5 @@ In case you're planning to start experimenting with ZWave, this is my setup:
 
 License
 =======
-Copyright 2015 Christian Stigen Larsen
+Copyright 2015 Christian Stigen Larsen  
 Distributed under the GPL v3 or later.
