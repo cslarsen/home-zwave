@@ -25,6 +25,13 @@ E.g., you can do
 
     $ sudo python home.py
     ...
+    INFO:root:Value updated node_id=2 value_id=100000002494000 'Smart Energy Switch' Switch: True
+    INFO:root:Value updated node_id=2 value_id=100000002c9c004 'Smart Energy Switch' Switch All: On and Off Enabled
+    INFO:root:Value updated node_id=2 value_id=1000000024c4042 'Smart Energy Switch' Power: 0.0 W
+    INFO:root:Value updated node_id=2 value_id=1000000024c8002 'Smart Energy Switch' Energy: 0.686999976635 kWh
+    INFO:root:Value updated node_id=2 value_id=1000000024c8012 'Smart Energy Switch' Previous Reading: 0.686999976635 kWh
+    INFO:root:Value updated node_id=2 value_id=1000000024c8023 'Smart Energy Switch' Interval: 3083 seconds
+    ...
     >>> from pprint import pprint
     >>> pprint(map(str, network.nodes.values()))
     ['home_id: [0xffd99115] id: [1] name: [] model: [Z-Stick Gen5]',
