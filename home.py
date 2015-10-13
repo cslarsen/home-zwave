@@ -186,7 +186,8 @@ def check_device(device):
     raise RuntimeError("Cannot read from device (need sudo?): %s" % device)
 
 def main():
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.INFO,
+    format="%(asctime)-15s %(levelno)d %(message)s")
 
   # TODO: Put in argparse
   device = None
@@ -209,7 +210,8 @@ def main():
   # TODO: Find light switch
 
   queue = threading.Thread(target=DataQueue.worker,
-      kwargs={"location": "home.db"})
+      kwargs={"location": "home.db"},
+      name="db")
   queue.start()
 
   try:
