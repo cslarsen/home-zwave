@@ -1,5 +1,6 @@
-OZW_Log.txt
-pyozw.db
 *.pyc
+OZW_Log.txt
+home.db
+pyozw.db
 zwcfg*.xml
 zwscene.xml
