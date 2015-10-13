@@ -110,6 +110,22 @@ class Signal:
     logging.info("Node event args=%s kw=%s" % (args, kw))
 
   @staticmethod
+  def button_on(*args, **kw):
+    logging.info("Button on args=%s kw=%s" % (args, kw))
+
+  @staticmethod
+  def button_off(*args, **kw):
+    logging.info("Button off args=%s kw=%s" % (args, kw))
+
+  @staticmethod
+  def error(*args, **kw):
+    logging.info("Error args=%s kw=%s" % (args, kw))
+
+  @staticmethod
+  def notification(*args, **kw):
+    logging.info("Notification args=%s kw=%s" % (args, kw))
+
+  @staticmethod
   def value_updated(network, node, value):
     name = node.product_name
     if not name:
@@ -185,6 +201,23 @@ def check_device(device):
   if not os.access(device, os.R_OK):
     raise RuntimeError("Cannot read from device (need sudo?): %s" % device)
 
+def connect_signals():
+  connections = [
+    (Signal.button_off, ZWaveNetwork.SIGNAL_BUTTON_ON),
+    (Signal.button_on, ZWaveNetwork.SIGNAL_BUTTON_ON),
+    #(Signal.error, ZWaveNetwork.SIGNAL_ERROR),
+    (Signal.network_failed, ZWaveNetwork.SIGNAL_NETWORK_FAILED),
+    (Signal.network_ready, ZWaveNetwork.SIGNAL_NETWORK_READY),
+    (Signal.network_started, ZWaveNetwork.SIGNAL_NETWORK_STARTED),
+    (Signal.node_event, ZWaveNetwork.SIGNAL_NODE_EVENT),
+    (Signal.node_updated, ZWaveNetwork.SIGNAL_NODE),
+    (Signal.notification, ZWaveNetwork.SIGNAL_NOTIFICATION),
+    (Signal.value_updated, ZWaveNetwork.SIGNAL_VALUE),
+  ]
+
+  for func, signal in connections:
+    louie.dispatcher.connect(func, signal)
+
 def main():
   logging.basicConfig(level=logging.INFO,
     format="%(asctime)-15s %(levelno)d %(message)s")
@@ -195,17 +228,10 @@ def main():
     device = discover_device()
   check_device(device)
 
+  connect_signals()
 
   options = create_zwave_options(device=device)
   network = ZWaveNetwork(options, log=None, autostart=False)
-
-  # Set up signaling
-  louie.dispatcher.connect(Signal.node_updated, ZWaveNetwork.SIGNAL_NODE)
-  louie.dispatcher.connect(Signal.value_updated, ZWaveNetwork.SIGNAL_VALUE)
-  louie.dispatcher.connect(Signal.network_started, ZWaveNetwork.SIGNAL_NETWORK_STARTED)
-  louie.dispatcher.connect(Signal.network_failed, ZWaveNetwork.SIGNAL_NETWORK_FAILED)
-  louie.dispatcher.connect(Signal.network_ready, ZWaveNetwork.SIGNAL_NETWORK_READY)
-  louie.dispatcher.connect(Signal.node_event, ZWaveNetwork.SIGNAL_NODE_EVENT)
 
   # TODO: Find light switch
 
