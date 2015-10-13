@@ -10,9 +10,10 @@ To start up:
 
   * You need to be root, or a member of the ``dialout`` group, because you need
     write access to the ZWave device's serial interface.
-  * Edit the ``device`` setting. It should point to your ZWave controller, e.g.
-    ``/dev/ttyACM0``. Do a ``dmesg | grep tty`` to get a clue.
-  * No other programs must be using the ZWave device.
+  * It will try to auto-discover Z-Wave USB controllers, but it only looks for
+    Sigma Designs (which includes Aeotec Z-Stick) currently. You can edit this
+    manually.
+  * No other programs must be using the ZWave controller.
 
 The entire program is event driven, and will start up without waiting for the
 network to be ready. This means it will take some time to see all devices.
@@ -25,12 +26,18 @@ E.g., you can do
 
     $ sudo python home.py
     ...
-    INFO:root:Value updated node_id=2 value_id=100000002494000 'Smart Energy Switch' Switch: True
-    INFO:root:Value updated node_id=2 value_id=100000002c9c004 'Smart Energy Switch' Switch All: On and Off Enabled
-    INFO:root:Value updated node_id=2 value_id=1000000024c4042 'Smart Energy Switch' Power: 0.0 W
-    INFO:root:Value updated node_id=2 value_id=1000000024c8002 'Smart Energy Switch' Energy: 0.686999976635 kWh
-    INFO:root:Value updated node_id=2 value_id=1000000024c8012 'Smart Energy Switch' Previous Reading: 0.686999976635 kWh
-    INFO:root:Value updated node_id=2 value_id=1000000024c8023 'Smart Energy Switch' Interval: 3083 seconds
+    INFO:root:Value updated node_id=2 value_id=100000002494000 'Smart Energy
+    Switch' Switch: True
+    INFO:root:Value updated node_id=2 value_id=100000002c9c004 'Smart Energy
+    Switch' Switch All: On and Off Enabled
+    INFO:root:Value updated node_id=2 value_id=1000000024c4042 'Smart Energy
+    Switch' Power: 0.0 W
+    INFO:root:Value updated node_id=2 value_id=1000000024c8002 'Smart Energy
+    Switch' Energy: 0.686999976635 kWh
+    INFO:root:Value updated node_id=2 value_id=1000000024c8012 'Smart Energy
+    Switch' Previous Reading: 0.686999976635 kWh
+    INFO:root:Value updated node_id=2 value_id=1000000024c8023 'Smart Energy
+    Switch' Interval: 3083 seconds
     ...
     >>> from pprint import pprint
     >>> pprint(map(str, network.nodes.values()))
@@ -57,10 +64,10 @@ Requirements
 
 You need the following Python modules:
 
-  * python-openzwave
-  * sqlite3
   * louie
-  * (soon) pyudev
+  * python-openzwave
+  * pyudev
+  * sqlite3
 
 Additionally, Python-OpenZWave requires the C++ version of OpenZWave. It should
 be bundled with the Python distribution, though.

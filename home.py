@@ -11,6 +11,7 @@ import datetime
 import logging
 import louie
 import os
+import pyudev
 import sqlite3
 import sys
 import threading
@@ -137,7 +138,7 @@ class Signal:
   def network_ready(network):
     logging.info("Network ready")
 
-def get_options(
+def create_zwave_options(
     device,
     config_path = "/usr/local/etc/openzwave", # TODO: Auto-discover
     user_path = ".",
@@ -158,20 +159,44 @@ def get_options(
     # try to give a meaningful error message
     raise
 
-def main(device = "/dev/ttyACM0"): # TODO: Auto-discover
-  logging.basicConfig(level=logging.INFO)
-  logging.info("Starting up")
+def discover_device():
+  """Attempts to discover ZWave controller serial device."""
+  udev = pyudev.Context()
 
+  for dev in udev.list_devices():
+    # Look for Z-Stick (Sigma Designs)
+    if (dev.get("ID_VENDOR_ID", "") == u"0658" and
+        dev.get("ID_MODEL", "") == u"0200" and
+        dev.subsystem == "tty"):
+
+      init = dev.time_since_initialized
+      devname = dev["DEVNAME"]
+      vendor = dev["ID_VENDOR_FROM_DATABASE"]
+
+      logging.info("Found %s (%s, initialized %s UTC)" % (devname, vendor,
+        (datetime.datetime.utcnow() - init)))
+      return devname
+  raise RuntimeError("Could not find any ZWave USB controllers.")
+
+def check_device(device):
   if not os.path.exists(device):
     raise RuntimeError("Device does not exist: %s" % device)
 
   if not os.access(device, os.R_OK):
     raise RuntimeError("Cannot read from device (need sudo?): %s" % device)
 
-  options = get_options(device=device)
+def main():
+  logging.basicConfig(level=logging.INFO)
 
+  # TODO: Put in argparse
+  device = None
+  if device is None:
+    device = discover_device()
+  check_device(device)
+
+
+  options = create_zwave_options(device=device)
   network = ZWaveNetwork(options, log=None, autostart=False)
-  #print(network) # TODO: Does not work, seems to be a bug in python-openzwave
 
   # Set up signaling
   louie.dispatcher.connect(Signal.node_updated, ZWaveNetwork.SIGNAL_NODE)
