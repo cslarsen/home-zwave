@@ -18,6 +18,9 @@ To start up:
 The entire program is event driven, and will start up without waiting for the
 network to be ready. This means it will take some time to see all devices.
 
+You may also need to set up a ``config.json`` file. See ``config.json.sample``
+for a starting point. I try to make settings here optional.
+
 After booting, you are dropped into a true Python REPL. You can do stuff here
 while the program runs concurrently (start with the ``network`` instance), but
 I haven't added any interactive commands yet.
@@ -64,10 +67,11 @@ Requirements
 
 You need the following Python modules:
 
-  * louie
-  * python-openzwave
-  * pyudev
-  * sqlite3
+  * chump (Pushover notifications)
+  * louie (internal ZWave event signaling)
+  * python-openzwave (communicating with ZWave controller)
+  * pyudev (autodiscovery of ZWave USB controller)
+  * sqlite3 (storage of data)
 
 Additionally, Python-OpenZWave requires the C++ version of OpenZWave. It should
 be bundled with the Python distribution, though.

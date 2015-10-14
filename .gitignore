@@ -3,3 +3,4 @@
 *.pyc
 *.xml
 OZW_Log.txt
+config.json

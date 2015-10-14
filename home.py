@@ -4,10 +4,12 @@
 from openzwave.network import ZWaveNetwork
 from openzwave.option import ZWaveOption
 import Queue
+import chump
 import code
 import collections
 import contextlib
 import datetime
+import json
 import logging
 import louie
 import os
@@ -16,6 +18,50 @@ import sqlite3
 import sys
 import threading
 import time
+
+class Config:
+  _config = {}
+
+  @staticmethod
+  def userkeys():
+    return Config._config.get("pushover", {}).get("userkeys", [])
+
+  @staticmethod
+  def apikey():
+    return Config._config.get("pushover", {}).get("apikey", None)
+
+  @staticmethod
+  def read_config(path):
+    if os.path.isfile(path):
+      with open(path, "rt") as f:
+        Config._config = json.loads(f.read())
+
+
+class Pushover:
+  def __init__(self, apikey, userkeys):
+    self.app = chump.Application(apikey)
+    assert(self.app.is_authenticated)
+
+    self.users = []
+    for userkey in userkeys:
+      user = self.app.get_user(userkey)
+      if user.is_authenticated:
+        self.users.append(user)
+        logging.info("Adding Pushover user with devices: %s" % user.devices)
+      else:
+        logging.warning("Pushover user not authenticated: %s" % userkey)
+
+  def send(self, message):
+    return [user.send_message(message) for user in self.users]
+
+# TODO: Ugh, don't like globals like this
+PUSHOVER = None
+def send_message(message):
+  global PUSHOVER
+  if PUSHOVER is not None:
+    logging.info("Sending Pushover message to %d users: '%s'" %
+        (len(PUSHOVER.users), message))
+    return PUSHOVER.send(message)
 
 # TODO: Refactor this stuff
 LIGHT = None
@@ -37,7 +83,10 @@ def set_light(flag):
   global LIGHT
   if LIGHT is None:
     return
-  logging.info("Turning light %s" % ("on" if flag else "off"))
+
+  message = "Turning light %s" % ("on" if flag else "off")
+  logging.info(message)
+  send_message(message)
   LIGHT.node.set_switch(LIGHT.value_id, flag)
 
 class Db:
@@ -249,7 +298,7 @@ def connect_signals():
     louie.dispatcher.connect(func, signal)
 
 def main():
-  global LIGHT
+  global LIGHT, PUSHOVER
 
   logging.basicConfig(level=logging.INFO,
     format="%(asctime)-15s %(levelno)d %(message)s")
@@ -259,6 +308,12 @@ def main():
   if device is None:
     device = discover_device()
   check_device(device)
+
+  Config.read_config("config.json")
+
+  if Config.apikey() is not None:
+    logging.info("Setting up Pushover")
+    PUSHOVER = Pushover(Config.apikey(), Config.userkeys())
 
   connect_signals()
 
