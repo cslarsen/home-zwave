@@ -18,23 +18,19 @@ import sqlite3
 import sys
 import threading
 import time
+import tupperware
 
-class Config:
-  _config = {}
+# TODO: Don't use globals
+CONFIG = None
 
-  @staticmethod
-  def userkeys():
-    return Config._config.get("pushover", {}).get("userkeys", [])
+def read_config(path):
+  global CONFIG
 
-  @staticmethod
-  def apikey():
-    return Config._config.get("pushover", {}).get("apikey", None)
+  if os.path.isfile(path):
+    with open(path, "rt") as f:
+      CONFIG = tupperware.tupperware(json.loads(f.read()))
 
-  @staticmethod
-  def read_config(path):
-    if os.path.isfile(path):
-      with open(path, "rt") as f:
-        Config._config = json.loads(f.read())
+  return CONFIG
 
 
 class Pushover:
@@ -47,7 +43,8 @@ class Pushover:
       user = self.app.get_user(userkey)
       if user.is_authenticated:
         self.users.append(user)
-        logging.info("Adding Pushover user with devices: %s" % user.devices)
+        logging.info("Adding Pushover user with devices: %s" % 
+          " ".join(user.devices))
       else:
         logging.warning("Pushover user not authenticated: %s" % userkey)
 
@@ -309,11 +306,10 @@ def main():
     device = discover_device()
   check_device(device)
 
-  Config.read_config("config.json")
-
-  if Config.apikey() is not None:
+  CONFIG = read_config("config.json")
+  if CONFIG.pushover.apikey is not None:
     logging.info("Setting up Pushover")
-    PUSHOVER = Pushover(Config.apikey(), Config.userkeys())
+    PUSHOVER = Pushover(CONFIG.pushover.apikey, CONFIG.pushover.userkeys)
 
   connect_signals()
 
