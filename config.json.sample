@@ -1,5 +1,6 @@
 {
   "pushover": {
+    "enabled": true/false,
     "apikey":   "If empty, ignore, else set to Pushover API key",
     "userkeys": ["List of Pushover user keys to send messages to"]
   }

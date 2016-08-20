@@ -55,7 +55,7 @@ class Pushover:
 PUSHOVER = None
 def send_message(message):
   global PUSHOVER
-  if PUSHOVER is not None:
+  if PUSHOVER is not None and CONFIG.pushover.enabled:
     logging.info("Sending Pushover message to %d users: '%s'" %
         (len(PUSHOVER.users), message))
     return PUSHOVER.send(message)
@@ -211,7 +211,7 @@ class Signal:
 
     if value.label.lower().startswith("burglar"):
       logging.info("Detected movement: %s" % value.data)
-      set_light(int(value.data) == 8)
+      #set_light(int(value.data) == 8)
 
     if isinstance(value.data, float) or isinstance(value.data, int):
       DataQueue.put((datetime.datetime.utcnow(), value), block=True)
